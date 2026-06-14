@@ -1,5 +1,8 @@
 const fetch = require('node-fetch');
 
+// 从环境变量读取电脑隧道地址
+const PARSE_SERVICE_URL = process.env.PARSE_SERVICE_URL || 'https://creative-tagged-louise-msgstr.trycloudflare.com/expand';
+
 module.exports = async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
   if (req.method === 'OPTIONS') return res.status(200).end();
@@ -15,7 +18,26 @@ module.exports = async (req, res) => {
   const tableId = process.env.TABLE_ID;
 
   try {
-    // 1. 获取飞书 token
+    // 1. 调用电脑解析短链接
+    const expandResp = await fetch(PARSE_SERVICE_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ links: items.map(item => item.link) })
+    });
+    if (!expandResp.ok) {
+      const errText = await expandResp.text();
+      throw new Error('解析服务请求失败: ' + errText);
+    }
+    const expandData = await expandResp.json();
+
+    // 2. 合并解析结果
+    const parsedItems = items.map((item, idx) => ({
+      ...item,
+      fullLink: expandData.results[idx]?.fullLink || item.link,
+      videoId: expandData.results[idx]?.videoId || ''
+    }));
+
+    // 3. 获取飞书token
     const tokenResp = await fetch('https://open.feishu.cn/open-apis/auth/v3/tenant_access_token/internal', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -25,19 +47,19 @@ module.exports = async (req, res) => {
     if (tokenData.code !== 0) throw new Error('飞书token失败: ' + tokenData.msg);
     const accessToken = tokenData.tenant_access_token;
 
-    // 2. 构造飞书记录（前端已经解析好长链接和视频ID）
-    const records = items.map(item => ({
+    // 4. 构造记录
+    const records = parsedItems.map(item => ({
       fields: {
         '用户ID': userId,
-        '视频ID': item.videoId || '',
-        '作品链接': item.link,
+        '视频ID': item.videoId,
+        '作品链接': item.fullLink,
         '推流码': item.code,
         '素材语言': language,
         '视频类型': item.videoType
       }
     }));
 
-    // 3. 写入飞书多维表格
+    // 5. 写入飞书
     const insertResp = await fetch(
       `https://open.feishu.cn/open-apis/bitable/v1/apps/${tableAppToken}/tables/${tableId}/records/batch_create`,
       {
