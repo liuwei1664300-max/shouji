@@ -10,9 +10,11 @@
   input, select { width: 100%; padding: 12px; margin: 8px 0; font-size: 16px; box-sizing: border-box; border: 1px solid #ddd; border-radius: 6px; }
   button { padding: 12px 24px; font-size: 16px; margin: 8px 4px; border: none; border-radius: 6px; background: #1677ff; color: white; }
   button[type="button"] { background: #52c41a; }
+  button.delete-btn { background: #ff4d4f; color: white; padding: 8px 16px; font-size: 14px; margin-left: 4px; }
   button:active { opacity: 0.8; }
-  .item-group { background: #fafafa; padding: 12px; margin: 8px 0; border-radius: 8px; border: 1px solid #eee; }
+  .item-group { background: #fafafa; padding: 12px; margin: 8px 0; border-radius: 8px; border: 1px solid #eee; position: relative; }
   .item-group input { margin: 4px 0; }
+  .item-group .delete-btn { position: absolute; top: 8px; right: 8px; }
   #msg { margin-top: 12px; text-align: center; font-size: 14px; }
 </style>
 </head>
@@ -35,6 +37,7 @@
         <input type="text" class="item-link" placeholder="作品链接" required>
         <input type="text" class="item-code" placeholder="推流码" required>
         <input type="number" class="item-videoType" placeholder="视频类型（数字）" required>
+        <button type="button" class="delete-btn" onclick="deleteGroup(this)">删除</button>
       </div>
     </div>
     <button type="button" id="addItemBtn">+ 添加作品</button>
@@ -43,19 +46,34 @@
   </form>
 
   <script>
-    // 部署后会自动指向 /api/submit
+    // 后端 API 地址，部署到 Vercel 后不用改
     const API_URL = '/api/submit';
 
+    // 添加作品组
     document.getElementById('addItemBtn').addEventListener('click', () => {
       const container = document.getElementById('itemsContainer');
       const group = document.createElement('div');
       group.className = 'item-group';
       group.innerHTML = `<input type="text" class="item-link" placeholder="作品链接" required>
                          <input type="text" class="item-code" placeholder="推流码" required>
-                         <input type="number" class="item-videoType" placeholder="视频类型（数字）" required>`;
+                         <input type="number" class="item-videoType" placeholder="视频类型（数字）" required>
+                         <button type="button" class="delete-btn" onclick="deleteGroup(this)">删除</button>`;
       container.appendChild(group);
     });
 
+    // 删除作品组，但至少保留一组
+    function deleteGroup(btn) {
+      const container = document.getElementById('itemsContainer');
+      const groups = container.querySelectorAll('.item-group');
+      if (groups.length <= 1) {
+        document.getElementById('msg').textContent = '至少保留一组作品信息';
+        return;
+      }
+      const group = btn.parentElement;
+      group.remove();
+    }
+
+    // 表单提交
     document.getElementById('mainForm').addEventListener('submit', async (e) => {
       e.preventDefault();
       const btn = e.target.querySelector('button[type="submit"]');
@@ -95,11 +113,13 @@
         if (resp.ok) {
           document.getElementById('msg').textContent = '提交成功！';
           e.target.reset();
+          // 重置后保留一组空作品组，且带删除按钮
           document.getElementById('itemsContainer').innerHTML = `
             <div class="item-group">
               <input type="text" class="item-link" placeholder="作品链接" required>
               <input type="text" class="item-code" placeholder="推流码" required>
               <input type="number" class="item-videoType" placeholder="视频类型（数字）" required>
+              <button type="button" class="delete-btn" onclick="deleteGroup(this)">删除</button>
             </div>`;
         } else {
           document.getElementById('msg').textContent = '失败：' + (data.error || '请重试');
