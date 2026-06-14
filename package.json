@@ -1,5 +1,5 @@
 {
-  "name": "feishu-bitable-submit",
+  "name": "tiktok-submit-feishu",
   "version": "1.0.0",
   "dependencies": {
     "node-fetch": "^2.6.1"
