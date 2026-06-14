@@ -28,7 +28,7 @@ module.exports = async (req, res) => {
       '作品链接': item.link,
       '推流码': item.code,
       '素材语言': language,
-      '视频类型': item.videoType   // 新增加，数字类型直接传入
+      '视频类型': String(item.videoType)   // 强制转为字符串
     }
   }));
 
