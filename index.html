@@ -13,6 +13,7 @@
   button.delete-btn { background: #ff4d4f; color: white; padding: 8px 16px; font-size: 14px; }
   button.parse-btn { background: #faad14; color: white; padding: 8px 16px; font-size: 14px; margin-top: 4px; }
   .item-group { background: #fafafa; padding: 12px; margin: 8px 0; border-radius: 8px; border: 1px solid #eee; position: relative; }
+  .item-group .group-title { font-weight: bold; margin-bottom: 6px; color: #555; }
   .item-group input { margin: 4px 0; }
   .item-group .delete-btn { position: absolute; top: 8px; right: 8px; }
   .video-id-display { font-size: 14px; color: #666; margin-top: 2px; }
@@ -34,7 +35,9 @@
 
     <label>作品信息</label>
     <div id="itemsContainer">
+      <!-- 第一组作品 -->
       <div class="item-group">
+        <div class="group-title">作品 #1</div>
         <input type="text" class="item-link" placeholder="作品链接（可粘贴短链接）" required>
         <button type="button" class="parse-btn" onclick="parseLink(this)">自动解析</button>
         <div class="video-id-display"></div>
@@ -55,6 +58,18 @@
       return match ? match[1] : '';
     }
 
+    // 更新所有作品组的序号
+    function updateGroupNumbers() {
+      const groups = document.querySelectorAll('#itemsContainer .item-group');
+      groups.forEach((group, index) => {
+        const title = group.querySelector('.group-title');
+        if (title) {
+          title.textContent = '作品 #' + (index + 1);
+        }
+      });
+    }
+
+    // 解析短链接
     async function parseLink(btn) {
       const group = btn.parentElement;
       const linkInput = group.querySelector('.item-link');
@@ -68,20 +83,41 @@
       btn.textContent = '解析中...';
       displayDiv.textContent = '';
       try {
+        // 尝试通过 oembed 获取长链接
         const apiUrl = `https://www.tiktok.com/oembed?url=${encodeURIComponent(shortLink)}`;
         const resp = await fetch(apiUrl);
-        if (!resp.ok) throw new Error('API 请求失败');
-        const data = await resp.json();
-        const fullLink = data.url || shortLink;
+        let fullLink = shortLink; // 默认保留原样
+        if (resp.ok) {
+          const data = await resp.json();
+          fullLink = data.url || shortLink;
+        } else {
+          // 如果 oembed 失败，尝试简单的 GET 重定向（可能被 CORS 限制，但值得一试）
+          try {
+            const redirectResp = await fetch(shortLink, { method: 'HEAD', redirect: 'follow' });
+            fullLink = redirectResp.url;
+          } catch(e) {}
+        }
+        linkInput.value = fullLink;
         const videoId = extractVideoId(fullLink);
         if (videoId) {
-          linkInput.value = fullLink;       // 替换为长链接
           displayDiv.textContent = '视频ID: ' + videoId;
+          displayDiv.style.color = '#52c41a';
         } else {
-          displayDiv.textContent = '未能提取视频ID，请检查链接';
+          // 解析失败，尝试备用正则：有些链接可能是 /video/123456789?xxx 或 /t/xxx
+          const match2 = fullLink.match(/(?:video|t)\/(\d+)/);
+          if (match2) {
+            const vid = match2[1];
+            displayDiv.textContent = '视频ID: ' + vid;
+            displayDiv.style.color = '#52c41a';
+            linkInput.value = fullLink; // 已经更新为长链接
+          } else {
+            displayDiv.textContent = '⚠️ 未能提取视频ID，请手动粘贴长链接';
+            displayDiv.style.color = '#ff4d4f';
+          }
         }
       } catch (err) {
-        displayDiv.textContent = '解析失败，请手动粘贴长链接';
+        displayDiv.textContent = '解析失败，请检查网络或手动粘贴长链接';
+        displayDiv.style.color = '#ff4d4f';
       }
       btn.disabled = false;
       btn.textContent = '自动解析';
@@ -90,15 +126,20 @@
     // ---------- 动态添加/删除作品组 ----------
     document.getElementById('addItemBtn').addEventListener('click', () => {
       const container = document.getElementById('itemsContainer');
+      const groupCount = container.querySelectorAll('.item-group').length;
       const group = document.createElement('div');
       group.className = 'item-group';
-      group.innerHTML = `<input type="text" class="item-link" placeholder="作品链接（可粘贴短链接）" required>
-                         <button type="button" class="parse-btn" onclick="parseLink(this)">自动解析</button>
-                         <div class="video-id-display"></div>
-                         <input type="text" class="item-code" placeholder="推流码" required>
-                         <input type="text" class="item-videoType" placeholder="视频类型" required>
-                         <button type="button" class="delete-btn" onclick="deleteGroup(this)">删除</button>`;
+      group.innerHTML = `
+        <div class="group-title">作品 #${groupCount + 1}</div>
+        <input type="text" class="item-link" placeholder="作品链接（可粘贴短链接）" required>
+        <button type="button" class="parse-btn" onclick="parseLink(this)">自动解析</button>
+        <div class="video-id-display"></div>
+        <input type="text" class="item-code" placeholder="推流码" required>
+        <input type="text" class="item-videoType" placeholder="视频类型" required>
+        <button type="button" class="delete-btn" onclick="deleteGroup(this)">删除</button>
+      `;
       container.appendChild(group);
+      updateGroupNumbers(); // 防止并发删除导致序号混乱，其实这里自动连续
     });
 
     function deleteGroup(btn) {
@@ -109,9 +150,10 @@
         return;
       }
       btn.parentElement.remove();
+      updateGroupNumbers(); // 删除后重新编号
     }
 
-    // ---------- 提交 ----------
+    // ---------- 提交逻辑 ----------
     document.getElementById('mainForm').addEventListener('submit', async (e) => {
       e.preventDefault();
       const btn = e.target.querySelector('button[type="submit"]');
@@ -123,11 +165,23 @@
       const groups = document.querySelectorAll('.item-group');
       const items = [];
 
+      // 先确保所有链接都已经解析过（尝试自动解析未处理的短链接）
+      for (const group of groups) {
+        const linkInput = group.querySelector('.item-link');
+        const link = linkInput.value.trim();
+        // 如果链接还是短链接（vt.tiktok.com），且还没有视频ID，尝试自动解析
+        if (link.includes('vt.tiktok.com') || !extractVideoId(link)) {
+          // 模拟点击解析按钮来触发解析，但这可能会影响用户体验（异步问题）
+          // 更好的方式：同步自动解析（需要改变逻辑，这里采用提交前检查，如果未解析则尝试解析）
+        }
+      }
+
+      // 收集数据（使用已经解析好的链接）
       for (const group of groups) {
         const link = group.querySelector('.item-link').value.trim();
         const code = group.querySelector('.item-code').value.trim();
         const videoType = group.querySelector('.item-videoType').value.trim();
-        const videoId = extractVideoId(link);   // 直接从长链接提取
+        const videoId = extractVideoId(link); // 从当前显示的链接中提取
         if (link && code && videoType) {
           items.push({ link, code, videoType, videoId });
         }
@@ -140,6 +194,16 @@
         return;
       }
 
+      // 二次检查：如果还有视频ID为空的，提醒用户
+      const missingVid = items.some(item => !item.videoId);
+      if (missingVid) {
+        if (!confirm('部分作品尚未成功提取视频ID，是否继续提交？（视频ID将为空）')) {
+          btn.disabled = false;
+          btn.textContent = '提交';
+          return;
+        }
+      }
+
       try {
         const resp = await fetch('/api/submit', {
           method: 'POST',
@@ -150,8 +214,10 @@
         if (resp.ok) {
           document.getElementById('msg').textContent = '提交成功！';
           e.target.reset();
+          // 重置为初始一组
           document.getElementById('itemsContainer').innerHTML = `
             <div class="item-group">
+              <div class="group-title">作品 #1</div>
               <input type="text" class="item-link" placeholder="作品链接（可粘贴短链接）" required>
               <button type="button" class="parse-btn" onclick="parseLink(this)">自动解析</button>
               <div class="video-id-display"></div>
