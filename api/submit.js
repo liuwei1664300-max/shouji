@@ -1,35 +1,8 @@
 const fetch = require('node-fetch');
 
-// ---------- 短链接还原 + 提取视频ID ----------
-async function expandShortLink(shortUrl) {
-  try {
-    const resp = await fetch(shortUrl, {
-      method: 'HEAD',
-      redirect: 'follow',
-      timeout: 5000
-    });
-    return resp.url; // 最终的长链接
-  } catch (e) {
-    // 如果 HEAD 失败，尝试 GET
-    try {
-      const resp2 = await fetch(shortUrl, {
-        method: 'GET',
-        redirect: 'follow',
-        timeout: 5000
-      });
-      return resp2.url;
-    } catch (e2) {
-      return shortUrl; // 失败则保留原链接
-    }
-  }
-}
+// ⚠️ 换成你的隧道域名（免费隧道重启后会变，到时候改这里就行）
+const PARSE_SERVICE_URL = 'https://raymond-carries-sims-wagon.trycloudflare.com/expand';
 
-function extractVideoId(url) {
-  const match = url.match(/\/video\/(\d+)/);
-  return match ? match[1] : '';
-}
-
-// ---------- 主处理函数 ----------
 module.exports = async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
   if (req.method === 'OPTIONS') return res.status(200).end();
@@ -45,7 +18,26 @@ module.exports = async (req, res) => {
   const tableId = process.env.TABLE_ID;
 
   try {
-    // 1. 获取飞书 token
+    // --- 第一步：调用你的电脑解析短链接 ---
+    const expandResp = await fetch(PARSE_SERVICE_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ links: items.map(item => item.link) })
+    });
+    if (!expandResp.ok) {
+      const errText = await expandResp.text();
+      throw new Error('解析服务请求失败: ' + errText);
+    }
+    const expandData = await expandResp.json();
+
+    // 将解析结果合并到 items
+    const parsedItems = items.map((item, idx) => ({
+      ...item,
+      fullLink: expandData.results[idx]?.fullLink || item.link,
+      videoId: expandData.results[idx]?.videoId || ''
+    }));
+
+    // --- 第二步：获取飞书 token ---
     const tokenResp = await fetch('https://open.feishu.cn/open-apis/auth/v3/tenant_access_token/internal', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -55,25 +47,19 @@ module.exports = async (req, res) => {
     if (tokenData.code !== 0) throw new Error('飞书token失败: ' + tokenData.msg);
     const accessToken = tokenData.tenant_access_token;
 
-    // 2. 处理每条记录：还原短链接 + 提取视频ID
-    const records = [];
-    for (const item of items) {
-      const rawLink = item.link.trim();
-      const fullLink = await expandShortLink(rawLink);
-      const videoId = extractVideoId(fullLink);
-      records.push({
-        fields: {
-          '用户ID': userId,
-          '视频ID': videoId,
-          '作品链接': fullLink,
-          '推流码': item.code,
-          '素材语言': language,
-          '视频类型': item.videoType
-        }
-      });
-    }
+    // --- 第三步：构造飞书记录 ---
+    const records = parsedItems.map(item => ({
+      fields: {
+        '用户ID': userId,
+        '视频ID': item.videoId,
+        '作品链接': item.fullLink,
+        '推流码': item.code,
+        '素材语言': language,
+        '视频类型': item.videoType
+      }
+    }));
 
-    // 3. 批量写入飞书多维表格
+    // --- 第四步：写入飞书多维表格 ---
     const insertResp = await fetch(
       `https://open.feishu.cn/open-apis/bitable/v1/apps/${tableAppToken}/tables/${tableId}/records/batch_create`,
       {
