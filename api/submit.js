@@ -1,7 +1,7 @@
 const fetch = require('node-fetch');
 
-// ⚠️ 换成你的隧道域名（免费隧道重启后会变，到时候改这里就行）
-const PARSE_SERVICE_URL = 'https://raymond-carries-sims-wagon.trycloudflare.com/expand';
+// 你的隧道域名（每次重启 cloudflared 都会变，变了就改这里）
+const PARSE_SERVICE_URL = 'https://creative-tagged-louise-msgstr.trycloudflare.com/expand';
 
 module.exports = async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -18,7 +18,7 @@ module.exports = async (req, res) => {
   const tableId = process.env.TABLE_ID;
 
   try {
-    // --- 第一步：调用你的电脑解析短链接 ---
+    // 第一步：调用你的电脑解析短链接
     const expandResp = await fetch(PARSE_SERVICE_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -37,7 +37,7 @@ module.exports = async (req, res) => {
       videoId: expandData.results[idx]?.videoId || ''
     }));
 
-    // --- 第二步：获取飞书 token ---
+    // 第二步：获取飞书 token
     const tokenResp = await fetch('https://open.feishu.cn/open-apis/auth/v3/tenant_access_token/internal', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -47,7 +47,7 @@ module.exports = async (req, res) => {
     if (tokenData.code !== 0) throw new Error('飞书token失败: ' + tokenData.msg);
     const accessToken = tokenData.tenant_access_token;
 
-    // --- 第三步：构造飞书记录 ---
+    // 第三步：构造飞书记录
     const records = parsedItems.map(item => ({
       fields: {
         '用户ID': userId,
@@ -59,7 +59,7 @@ module.exports = async (req, res) => {
       }
     }));
 
-    // --- 第四步：写入飞书多维表格 ---
+    // 第四步：写入飞书多维表格
     const insertResp = await fetch(
       `https://open.feishu.cn/open-apis/bitable/v1/apps/${tableAppToken}/tables/${tableId}/records/batch_create`,
       {
