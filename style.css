@@ -1,6 +1,5 @@
 /* ============================================
    TikTok 推流表单 - 设计系统
-   新增：一键粘贴按钮样式
    ============================================ */
 
 :root {
@@ -160,7 +159,7 @@ body {
   padding-right: 36px;
 }
 
-/* ========== 新增：输入框包裹 + 粘贴按钮 ========== */
+/* 输入框包裹 + 粘贴按钮 */
 .input-wrap {
   position: relative;
   display: flex;
@@ -168,7 +167,7 @@ body {
 }
 
 .input-wrap .form-group__input {
-  padding-right: 48px; /* 给右侧按钮留空 */
+  padding-right: 48px;
 }
 
 .btn-paste {
@@ -199,7 +198,6 @@ body {
   color: white;
   transform: translateY(-50%) scale(0.95);
 }
-/* ========== 粘贴按钮样式结束 ========== */
 
 /* 作品容器 & 内嵌卡片 */
 .works-container {
@@ -259,7 +257,6 @@ body {
   gap: 10px;
 }
 
-/* 作品字段内的输入框背景微调 */
 .work-item__fields .form-group__input {
   background: rgba(255,255,255,0.7);
 }
