@@ -1,5 +1,6 @@
 /* ============================================
    TikTok 推流表单 - 设计系统
+   新增：底部安全区域、励志名言样式
    ============================================ */
 
 :root {
@@ -18,6 +19,7 @@
 
   --text: #111827;
   --text-secondary: #6b7280;
+  --text-muted: #9ca3af;
 
   --radius-lg: 24px;
   --radius-md: 16px;
@@ -70,6 +72,7 @@ body {
   width: 100%;
   max-width: 480px;
   padding: 24px 20px;
+  padding-bottom: calc(80px + env(safe-area-inset-bottom)); /* 底部留白：名言+安全区 */
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
@@ -296,6 +299,7 @@ body {
   font-size: 18px;
   font-weight: 700;
   margin-top: 8px;
+  margin-bottom: 24px; /* 与下方名言保持距离 */
   box-shadow: var(--shadow-btn);
   transform: translateY(0);
 }
@@ -308,6 +312,20 @@ body {
   box-shadow: none;
   transform: none;
   cursor: not-allowed;
+}
+
+/* 励志名言 */
+.motto {
+  text-align: center;
+  margin-top: 8px;
+  padding-bottom: 24px;
+}
+.motto p {
+  font-size: 14px;
+  color: var(--text-muted);
+  line-height: 1.8;
+  margin: 0;
+  font-style: italic;
 }
 
 /* ======================
