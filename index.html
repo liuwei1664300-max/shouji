@@ -26,7 +26,10 @@
           </h2>
           <div class="form-group">
             <label class="form-group__label" for="userId">用户ID</label>
-            <input class="form-group__input" type="text" id="userId" placeholder="输入用户ID" required>
+            <div class="input-wrap">
+              <input class="form-group__input" type="text" id="userId" placeholder="输入用户ID" required>
+              <button type="button" class="btn-paste" title="粘贴用户ID">📋</button>
+            </div>
           </div>
           <div class="form-group">
             <label class="form-group__label" for="language">素材语言</label>
@@ -85,9 +88,21 @@
           <button type="button" class="work-item__delete" title="删除">✕</button>
         </div>
         <div class="work-item__fields">
-          <input type="text" class="form-group__input" placeholder="作品链接（可粘贴短链接）" required>
-          <input type="text" class="form-group__input" placeholder="推流码" required>
-          <input type="text" class="form-group__input" placeholder="视频类型（数字）" required>
+          <!-- 作品链接输入框 + 粘贴按钮 -->
+          <div class="input-wrap">
+            <input type="text" class="form-group__input item-link" placeholder="作品链接（可粘贴短链接）" required>
+            <button type="button" class="btn-paste" title="粘贴链接">📋</button>
+          </div>
+          <!-- 推流码输入框 + 粘贴按钮 -->
+          <div class="input-wrap">
+            <input type="text" class="form-group__input item-code" placeholder="推流码" required>
+            <button type="button" class="btn-paste" title="粘贴推流码">📋</button>
+          </div>
+          <!-- 视频类型输入框 + 粘贴按钮 -->
+          <div class="input-wrap">
+            <input type="text" class="form-group__input item-videoType" placeholder="视频类型（数字）" required>
+            <button type="button" class="btn-paste" title="粘贴视频类型">📋</button>
+          </div>
         </div>
       `;
       // 删除事件
@@ -112,7 +127,7 @@
 
     function showModal(text, type) {
       modalContent.textContent = text;
-      modal.className = `modal modal--${type}`; // 应用成功/失败样式
+      modal.className = `modal modal--${type}`;
       modalClose.addEventListener('click', hideModal, { once: true });
       modalMask.addEventListener('click', hideModal, { once: true });
     }
@@ -121,7 +136,38 @@
       modal.className = 'modal';
     }
 
-    // 初始化
+    // ---------- 一键粘贴逻辑 ----------
+    async function pasteToInput(inputElement) {
+      try {
+        const text = await navigator.clipboard.readText();
+        if (!text || !text.trim()) {
+          showModal('剪贴板为空，请先复制内容', 'error');
+          return;
+        }
+        // 尝试提取链接（如果有），否则直接粘贴全文
+        const linkMatch = text.match(/https?:\/\/(?:vt\.tiktok\.com|www\.tiktok\.com)\S+/);
+        const valueToPaste = linkMatch ? linkMatch[0] : text.trim();
+        inputElement.value = valueToPaste;
+        // 触发 input 事件，便于可能的后续处理
+        inputElement.dispatchEvent(new Event('input', { bubbles: true }));
+      } catch (err) {
+        // 如果用户拒绝授权或其他错误，提示手动粘贴
+        showModal('无法读取剪贴板，请手动长按粘贴', 'error');
+      }
+    }
+
+    // 绑定所有粘贴按钮（包括动态生成的）
+    document.addEventListener('click', function(e) {
+      const btn = e.target.closest('.btn-paste');
+      if (!btn) return;
+      const wrap = btn.closest('.input-wrap');
+      const input = wrap ? wrap.querySelector('input') : null;
+      if (input) {
+        pasteToInput(input);
+      }
+    });
+
+    // ---------- 初始化 ----------
     const itemsContainer = document.getElementById('itemsContainer');
     itemsContainer.appendChild(createWorkItem(1));
 
@@ -132,7 +178,7 @@
       updateGroupNumbers();
     });
 
-    // 提交
+    // ---------- 提交 ----------
     document.getElementById('mainForm').addEventListener('submit', async (e) => {
       e.preventDefault();
       const btn = e.target.querySelector('.btn--submit');
@@ -145,10 +191,9 @@
       const items = [];
 
       for (const group of groups) {
-        const inputs = group.querySelectorAll('.form-group__input');
-        const link = inputs[0].value.trim();
-        const code = inputs[1].value.trim();
-        const videoType = inputs[2].value.trim();
+        const link = group.querySelector('.item-link').value.trim();
+        const code = group.querySelector('.item-code').value.trim();
+        const videoType = group.querySelector('.item-videoType').value.trim();
         if (link && code && videoType) {
           items.push({ link, code, videoType });
         }
