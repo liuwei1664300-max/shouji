@@ -56,6 +56,12 @@
 
         <!-- 提交按钮 -->
         <button type="submit" class="btn btn--submit">提 交</button>
+        <!-- 励志名言（提交按钮下方） -->
+        <div class="motto">
+          <p>“坚持每日耕耘，收获自在未来。”</p >
+          <p>“每一次努力，都在雕刻更好的自己。”</p >
+          <p>“星光不问赶路人，时光不负有心人。”</p >
+        </div>
       </form>
     </div>
 
@@ -98,7 +104,7 @@
             <input type="text" class="form-group__input item-code" placeholder="推流码" required>
             <button type="button" class="btn-paste" title="粘贴推流码">📋</button>
           </div>
-          <!-- 视频类型输入框 + 粘贴按钮（非必填，已移除 required） -->
+          <!-- 视频类型输入框 + 粘贴按钮（非必填） -->
           <div class="input-wrap">
             <input type="text" class="form-group__input item-videoType" placeholder="视频类型（数字）">
             <button type="button" class="btn-paste" title="粘贴视频类型">📋</button>
@@ -192,7 +198,6 @@
         const link = group.querySelector('.item-link').value.trim();
         const code = group.querySelector('.item-code').value.trim();
         const videoType = group.querySelector('.item-videoType').value.trim();
-        // 视频类型改为非必填，只检查 link 和 code
         if (link && code) {
           items.push({ link, code, videoType });
         }
