@@ -4,353 +4,158 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>TikTok 推流提交</title>
-  <style>
-    :root {
-      --primary: #111827;
-      --primary-light: #1f2937;
-      --accent: #6366f1;
-      --accent-hover: #4f46e5;
-      --danger: #ef4444;
-      --danger-hover: #dc2626;
-      --bg: #f9fafb;
-      --card-bg: #ffffff;
-      --border: #e5e7eb;
-      --text: #111827;
-      --text-secondary: #6b7280;
-      --radius: 16px;
-      --radius-sm: 10px;
-      --shadow: 0 1px 2px rgba(0,0,0,0.05), 0 2px 8px rgba(0,0,0,0.03);
-    }
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      display: flex;
-      justify-content: center;
-      align-items: flex-start;
-      min-height: 100vh;
-      padding: 20px;
-      -webkit-tap-highlight-color: transparent;
-    }
-    .container {
-      width: 100%;
-      max-width: 480px;
-    }
-    .header {
-      text-align: center;
-      margin-bottom: 24px;
-    }
-    .header h1 {
-      font-size: 26px;
-      font-weight: 700;
-      color: var(--primary);
-      letter-spacing: -0.5px;
-    }
-    .header p {
-      font-size: 14px;
-      color: var(--text-secondary);
-      margin-top: 4px;
-    }
-    form {
-      display: flex;
-      flex-direction: column;
-      gap: 20px;
-    }
-    .section {
-      background: var(--card-bg);
-      border-radius: var(--radius);
-      padding: 20px;
-      box-shadow: var(--shadow);
-      border: 1px solid var(--border);
-    }
-    .section-title {
-      font-size: 15px;
-      font-weight: 600;
-      margin-bottom: 12px;
-      color: var(--primary-light);
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-    .section-title .icon {
-      font-size: 18px;
-    }
-    label {
-      display: block;
-      font-size: 13px;
-      font-weight: 500;
-      color: var(--text-secondary);
-      margin-bottom: 6px;
-    }
-    input, select {
-      width: 100%;
-      padding: 12px 14px;
-      margin-bottom: 14px;
-      font-size: 16px;
-      border: 1px solid var(--border);
-      border-radius: var(--radius-sm);
-      background: #fff;
-      outline: none;
-      transition: all 0.2s ease;
-      color: var(--text);
-      -webkit-appearance: none;
-      appearance: none;
-    }
-    input:focus, select:focus {
-      border-color: var(--accent);
-      box-shadow: 0 0 0 3px rgba(99,102,241,0.1);
-    }
-    select {
-      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M6 8L1 3h10z' fill='%236b7280'/%3E%3C/svg%3E");
-      background-repeat: no-repeat;
-      background-position: right 14px center;
-      padding-right: 36px;
-    }
-    .item-group {
-      background: #f8fafc;
-      border: 1px solid #e2e8f0;
-      border-radius: var(--radius-sm);
-      padding: 16px;
-      margin-bottom: 12px;
-      position: relative;
-      transition: all 0.2s ease;
-    }
-    .item-group:hover {
-      border-color: #cbd5e1;
-    }
-    .item-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 12px;
-    }
-    .group-title {
-      font-weight: 600;
-      font-size: 14px;
-      color: var(--primary);
-      background: #e0e7ff;
-      padding: 4px 12px;
-      border-radius: 20px;
-      display: inline-block;
-    }
-    .btn-icon {
-      background: none;
-      border: none;
-      font-size: 20px;
-      cursor: pointer;
-      color: #94a3b8;
-      padding: 4px 8px;
-      border-radius: 6px;
-      transition: all 0.2s;
-      line-height: 1;
-    }
-    .btn-icon:hover {
-      color: var(--danger);
-      background: rgba(239,68,68,0.08);
-    }
-    .item-fields {
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-    }
-    .item-fields input {
-      margin-bottom: 0;
-    }
-    .add-btn {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 6px;
-      width: 100%;
-      padding: 14px;
-      background: #fff;
-      border: 2px dashed var(--border);
-      border-radius: var(--radius-sm);
-      color: var(--accent);
-      font-weight: 600;
-      font-size: 16px;
-      cursor: pointer;
-      transition: all 0.2s ease;
-      margin-top: 8px;
-    }
-    .add-btn:hover {
-      border-color: var(--accent);
-      background: rgba(99,102,241,0.03);
-    }
-    .submit-btn {
-      width: 100%;
-      padding: 16px;
-      background: var(--accent);
-      color: white;
-      font-size: 18px;
-      font-weight: 700;
-      border: none;
-      border-radius: var(--radius-sm);
-      cursor: pointer;
-      transition: all 0.2s ease;
-      box-shadow: 0 4px 12px rgba(99,102,241,0.25);
-      margin-top: 8px;
-    }
-    .submit-btn:active {
-      transform: scale(0.98);
-      background: var(--accent-hover);
-    }
-    .submit-btn:disabled {
-      background: #a5b4fc;
-      box-shadow: none;
-      transform: none;
-      cursor: not-allowed;
-    }
-    .message {
-      text-align: center;
-      font-size: 14px;
-      padding: 10px;
-      border-radius: 8px;
-      margin-top: 8px;
-      display: none;
-    }
-    .message.success {
-      display: block;
-      background: #dcfce7;
-      color: #166534;
-    }
-    .message.error {
-      display: block;
-      background: #fee2e2;
-      color: #991b1b;
-    }
-  </style>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <div class="container">
-    <div class="header">
-      <h1>📱 TikTok 推流</h1>
-      <p>粘贴短链接，自动提取视频ID</p>
+  <div class="app">
+    <!-- 背景装饰 -->
+    <div class="bg-pattern"></div>
+
+    <!-- 主内容容器 -->
+    <div class="container">
+      <header class="header">
+        <h1 class="header__title">📱 TikTok 推流</h1>
+        <p class="header__desc">粘贴短链接，自动提取视频ID</p >
+      </header>
+
+      <form class="form" id="mainForm">
+        <!-- 基本信息卡片 -->
+        <section class="card card--basic">
+          <h2 class="card__title">
+            <span class="card__icon">👤</span> 基本信息
+          </h2>
+          <div class="form-group">
+            <label class="form-group__label" for="userId">用户ID</label>
+            <input class="form-group__input" type="text" id="userId" placeholder="输入用户ID" required>
+          </div>
+          <div class="form-group">
+            <label class="form-group__label" for="language">素材语言</label>
+            <select class="form-group__select" id="language" required>
+              <option value="" disabled selected>请选择语言</option>
+              <option value="英语">英语</option>
+              <option value="西班牙语">西班牙语</option>
+            </select>
+          </div>
+        </section>
+
+        <!-- 作品信息卡片 -->
+        <section class="card card--works">
+          <h2 class="card__title">
+            <span class="card__icon">🎬</span> 作品信息
+          </h2>
+          <div class="works-container" id="itemsContainer">
+            <!-- 动态插入作品组 -->
+          </div>
+          <button type="button" class="btn btn--add" id="addItemBtn">
+            ＋ 添加作品
+          </button>
+        </section>
+
+        <!-- 提交按钮 -->
+        <button type="submit" class="btn btn--submit">提 交</button>
+      </form>
     </div>
 
-    <form id="mainForm">
-      <!-- 基本区 -->
-      <div class="section">
-        <div class="section-title">
-          <span class="icon">👤</span> 基本信息
-        </div>
-        <label>用户ID</label>
-        <input type="text" id="userId" placeholder="输入用户ID" required>
-
-        <label>素材语言</label>
-        <select id="language" required>
-          <option value="" disabled selected>请选择语言</option>
-          <option value="英语">英语</option>
-          <option value="西班牙语">西班牙语</option>
-        </select>
+    <!-- 弹窗：成功/失败提示 -->
+    <div class="modal" id="modal">
+      <div class="modal__mask"></div>
+      <div class="modal__dialog">
+        <div class="modal__content" id="modalContent"></div>
+        <button class="modal__close" id="modalClose">确定</button>
       </div>
-
-      <!-- 作品信息区 -->
-      <div class="section">
-        <div class="section-title">
-          <span class="icon">🎬</span> 作品信息
-        </div>
-        <div id="itemsContainer">
-          <!-- 动态插入 .item-group -->
-        </div>
-        <button type="button" class="add-btn" id="addItemBtn">
-          ＋ 添加作品
-        </button>
-      </div>
-
-      <button type="submit" class="submit-btn">提 交</button>
-      <div id="msg" class="message"></div>
-    </form>
+    </div>
   </div>
 
   <script>
-    // ---------- 工具 ----------
+    // ---------- 工具函数 ----------
     function updateGroupNumbers() {
-      const groups = document.querySelectorAll('#itemsContainer .item-group');
+      const groups = document.querySelectorAll('.work-item');
       groups.forEach((group, index) => {
-        const title = group.querySelector('.group-title');
+        const title = group.querySelector('.work-item__title');
         if (title) title.textContent = `作品 #${index + 1}`;
       });
     }
 
-    function createItemGroup(index) {
-      const group = document.createElement('div');
-      group.className = 'item-group';
-      group.innerHTML = `
-        <div class="item-header">
-          <span class="group-title">作品 #${index}</span>
-          <button type="button" class="btn-icon delete-btn" title="删除">✕</button>
+    function createWorkItem(index) {
+      const item = document.createElement('div');
+      item.className = 'work-item';
+      item.innerHTML = `
+        <div class="work-item__header">
+          <span class="work-item__title">作品 #${index}</span>
+          <button type="button" class="work-item__delete" title="删除">✕</button>
         </div>
-        <div class="item-fields">
-          <input type="text" class="item-link" placeholder="作品链接（可粘贴短链接）" required>
-          <input type="text" class="item-code" placeholder="推流码" required>
-          <input type="text" class="item-videoType" placeholder="视频类型（数字）" required>
+        <div class="work-item__fields">
+          <input type="text" class="form-group__input" placeholder="作品链接（可粘贴短链接）" required>
+          <input type="text" class="form-group__input" placeholder="推流码" required>
+          <input type="text" class="form-group__input" placeholder="视频类型（数字）" required>
         </div>
       `;
       // 删除事件
-      group.querySelector('.delete-btn').addEventListener('click', () => {
+      item.querySelector('.work-item__delete').addEventListener('click', () => {
         const container = document.getElementById('itemsContainer');
-        const groups = container.querySelectorAll('.item-group');
+        const groups = container.querySelectorAll('.work-item');
         if (groups.length <= 1) {
-          showMessage('至少保留一组作品信息', 'error');
+          showModal('至少保留一组作品信息', 'error');
           return;
         }
-        group.remove();
+        item.remove();
         updateGroupNumbers();
       });
-      return group;
+      return item;
     }
 
-    function showMessage(text, type) {
-      const msgDiv = document.getElementById('msg');
-      msgDiv.textContent = text;
-      msgDiv.className = `message ${type}`;
-      setTimeout(() => {
-        msgDiv.className = 'message';
-        msgDiv.textContent = '';
-      }, 4000);
+    // 弹窗控制
+    const modal = document.getElementById('modal');
+    const modalContent = document.getElementById('modalContent');
+    const modalClose = document.getElementById('modalClose');
+    const modalMask = document.querySelector('.modal__mask');
+
+    function showModal(text, type) {
+      modalContent.textContent = text;
+      modal.className = `modal modal--${type}`; // 应用成功/失败样式
+      modalClose.addEventListener('click', hideModal, { once: true });
+      modalMask.addEventListener('click', hideModal, { once: true });
     }
 
-    // ---------- 初始化 ----------
+    function hideModal() {
+      modal.className = 'modal';
+    }
+
+    // 初始化
     const itemsContainer = document.getElementById('itemsContainer');
-    // 默认一组
-    itemsContainer.appendChild(createItemGroup(1));
+    itemsContainer.appendChild(createWorkItem(1));
 
-    // 添加按钮
+    // 添加作品
     document.getElementById('addItemBtn').addEventListener('click', () => {
-      const count = itemsContainer.querySelectorAll('.item-group').length;
-      itemsContainer.appendChild(createItemGroup(count + 1));
+      const count = itemsContainer.querySelectorAll('.work-item').length;
+      itemsContainer.appendChild(createWorkItem(count + 1));
       updateGroupNumbers();
     });
 
-    // ---------- 提交 ----------
+    // 提交
     document.getElementById('mainForm').addEventListener('submit', async (e) => {
       e.preventDefault();
-      const btn = e.target.querySelector('button[type="submit"]');
+      const btn = e.target.querySelector('.btn--submit');
       btn.disabled = true;
       btn.textContent = '提交中...';
 
       const userId = document.getElementById('userId').value.trim();
       const language = document.getElementById('language').value;
-      const groups = document.querySelectorAll('.item-group');
+      const groups = document.querySelectorAll('.work-item');
       const items = [];
 
       for (const group of groups) {
-        const link = group.querySelector('.item-link').value.trim();
-        const code = group.querySelector('.item-code').value.trim();
-        const videoType = group.querySelector('.item-videoType').value.trim();
+        const inputs = group.querySelectorAll('.form-group__input');
+        const link = inputs[0].value.trim();
+        const code = inputs[1].value.trim();
+        const videoType = inputs[2].value.trim();
         if (link && code && videoType) {
           items.push({ link, code, videoType });
         }
       }
 
       if (!userId || !language || items.length === 0) {
-        showMessage('请完整填写基本信息及至少一组作品', 'error');
+        showModal('请完整填写基本信息及至少一组作品', 'error');
         btn.disabled = false;
         btn.textContent = '提 交';
         return;
@@ -364,19 +169,16 @@
         });
         const data = await resp.json();
         if (resp.ok) {
-          showMessage('✓ 提交成功！', 'success');
-          // 重置表单
+          showModal('✓ 提交成功！', 'success');
           e.target.reset();
-          // 重置作品区为1组
           itemsContainer.innerHTML = '';
-          itemsContainer.appendChild(createItemGroup(1));
-          // 清空语言选择
+          itemsContainer.appendChild(createWorkItem(1));
           document.getElementById('language').value = '';
         } else {
-          showMessage('✗ ' + (data.error || '请重试'), 'error');
+          showModal('✗ ' + (data.error || '请重试'), 'error');
         }
       } catch (err) {
-        showMessage('网络错误，请检查连接', 'error');
+        showModal('网络错误，请检查连接', 'error');
       }
       btn.disabled = false;
       btn.textContent = '提 交';
