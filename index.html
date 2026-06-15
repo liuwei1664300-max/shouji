@@ -98,9 +98,9 @@
             <input type="text" class="form-group__input item-code" placeholder="推流码" required>
             <button type="button" class="btn-paste" title="粘贴推流码">📋</button>
           </div>
-          <!-- 视频类型输入框 + 粘贴按钮 -->
+          <!-- 视频类型输入框 + 粘贴按钮（非必填，已移除 required） -->
           <div class="input-wrap">
-            <input type="text" class="form-group__input item-videoType" placeholder="视频类型（数字）" required>
+            <input type="text" class="form-group__input item-videoType" placeholder="视频类型（数字）">
             <button type="button" class="btn-paste" title="粘贴视频类型">📋</button>
           </div>
         </div>
@@ -144,19 +144,17 @@
           showModal('剪贴板为空，请先复制内容', 'error');
           return;
         }
-        // 尝试提取链接（如果有），否则直接粘贴全文
+        // 智能提取 TikTok 链接
         const linkMatch = text.match(/https?:\/\/(?:vt\.tiktok\.com|www\.tiktok\.com)\S+/);
         const valueToPaste = linkMatch ? linkMatch[0] : text.trim();
         inputElement.value = valueToPaste;
-        // 触发 input 事件，便于可能的后续处理
         inputElement.dispatchEvent(new Event('input', { bubbles: true }));
       } catch (err) {
-        // 如果用户拒绝授权或其他错误，提示手动粘贴
         showModal('无法读取剪贴板，请手动长按粘贴', 'error');
       }
     }
 
-    // 绑定所有粘贴按钮（包括动态生成的）
+    // 委托监听所有粘贴按钮
     document.addEventListener('click', function(e) {
       const btn = e.target.closest('.btn-paste');
       if (!btn) return;
@@ -194,13 +192,14 @@
         const link = group.querySelector('.item-link').value.trim();
         const code = group.querySelector('.item-code').value.trim();
         const videoType = group.querySelector('.item-videoType').value.trim();
-        if (link && code && videoType) {
+        // 视频类型改为非必填，只检查 link 和 code
+        if (link && code) {
           items.push({ link, code, videoType });
         }
       }
 
       if (!userId || !language || items.length === 0) {
-        showModal('请完整填写基本信息及至少一组作品', 'error');
+        showModal('请完整填写基本信息及至少一组作品（作品链接和推流码为必填）', 'error');
         btn.disabled = false;
         btn.textContent = '提 交';
         return;
