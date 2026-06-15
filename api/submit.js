@@ -1,7 +1,39 @@
 const fetch = require('node-fetch');
 
-// 从环境变量读取电脑隧道地址
-const PARSE_SERVICE_URL = process.env.PARSE_SERVICE_URL || 'https://creative-tagged-louise-msgstr.trycloudflare.com/expand';
+// 官方批量解析接口
+const BATCH_PARSE_URL = 'https://stweb.youpengw.com/minipic/parse/batchParse';
+
+/**
+ * 调用官方批量解析，返回 { fullLink, videoId } 数组
+ * @param {string[]} links - 短链接数组
+ * @returns {Promise<{fullLink: string, videoId: string}[]>}
+ */
+async function batchParseLinks(links) {
+  try {
+    // 构造 urls 参数：每行 "索引|链接"
+    const urlsBody = links
+      .map((link, index) => `${index}|${link}`)
+      .join('\n');
+
+    const resp = await fetch(BATCH_PARSE_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded'
+      },
+      body: new URLSearchParams({ urls: urlsBody }).toString()
+    });
+    const json = await resp.json();
+    if (json.code !== 1) throw new Error('解析失败: ' + json.msg);
+    const successList = json.data?.success_list || [];
+    return successList.map(item => ({
+      fullLink: `https://www.tiktok.com/@${item.uid}/video/${item.video_id}`,
+      videoId: item.video_id || ''
+    }));
+  } catch (err) {
+    console.error('官方解析接口调用失败:', err);
+    return []; // 失败时返回空数组，让后续逻辑继续
+  }
+}
 
 module.exports = async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -18,26 +50,13 @@ module.exports = async (req, res) => {
   const tableId = process.env.TABLE_ID;
 
   try {
-    // 1. 调用电脑解析短链接
-    const expandResp = await fetch(PARSE_SERVICE_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ links: items.map(item => item.link) })
-    });
-    if (!expandResp.ok) {
-      const errText = await expandResp.text();
-      throw new Error('解析服务请求失败: ' + errText);
-    }
-    const expandData = await expandResp.json();
+    // 1. 提取所有短链接
+    const links = items.map(item => item.link);
 
-    // 2. 合并解析结果
-    const parsedItems = items.map((item, idx) => ({
-      ...item,
-      fullLink: expandData.results[idx]?.fullLink || item.link,
-      videoId: expandData.results[idx]?.videoId || ''
-    }));
+    // 2. 调用官方批量解析
+    const parsedResults = await batchParseLinks(links);
 
-    // 3. 获取飞书token
+    // 3. 获取飞书 token
     const tokenResp = await fetch('https://open.feishu.cn/open-apis/auth/v3/tenant_access_token/internal', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -47,19 +66,19 @@ module.exports = async (req, res) => {
     if (tokenData.code !== 0) throw new Error('飞书token失败: ' + tokenData.msg);
     const accessToken = tokenData.tenant_access_token;
 
-    // 4. 构造记录
-    const records = parsedItems.map(item => ({
+    // 4. 构造飞书记录（合并解析结果）
+    const records = items.map((item, idx) => ({
       fields: {
         '用户ID': userId,
-        '视频ID': item.videoId,
-        '作品链接': item.fullLink,
+        '视频ID': parsedResults[idx]?.videoId || '',
+        '作品链接': parsedResults[idx]?.fullLink || item.link,
         '推流码': item.code,
         '素材语言': language,
         '视频类型': item.videoType
       }
     }));
 
-    // 5. 写入飞书
+    // 5. 写入飞书多维表格
     const insertResp = await fetch(
       `https://open.feishu.cn/open-apis/bitable/v1/apps/${tableAppToken}/tables/${tableId}/records/batch_create`,
       {
